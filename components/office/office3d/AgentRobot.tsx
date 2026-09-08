@@ -6,6 +6,7 @@ import { Html } from "@react-three/drei";
 import * as THREE from "three";
 import { AgentId, AgentStatus } from "@/types";
 import { STATUS_HEX } from "@/lib/theme";
+import { WALK_SPEED } from "@/lib/office3d-layout";
 
 // Body proportions, in world units (roughly meters). Feet at y=0.
 const SHIN_LEN = 0.22;
@@ -38,9 +39,13 @@ interface AgentRobotProps {
   target: [number, number]; // world (x, z) the agent is walking toward / standing at
   lookTarget: [number, number]; // world (x, z) point to face while stationary (monitor, or the meeting table while briefing)
   onSelect: () => void;
+  // Forces the "talking" arm gesture even outside receiving_task/reviewing —
+  // used for ambient, off-task chats (coffee break banter, hallway catch-ups)
+  // where the agent's real status is still just "idle".
+  forceTalk?: boolean;
 }
 
-export function AgentRobot({ agentId, name, color, status, target, lookTarget, onSelect }: AgentRobotProps) {
+export function AgentRobot({ agentId, name, color, status, target, lookTarget, onSelect, forceTalk }: AgentRobotProps) {
   const group = useRef<THREE.Group>(null!);
   const posRef = useRef(new THREE.Vector3(target[0], 0, target[1]));
 
@@ -56,7 +61,7 @@ export function AgentRobot({ agentId, name, color, status, target, lookTarget, o
   const completed = status === "completed";
   const seated = status === "working";
   const thinking = status === "thinking";
-  const briefing = status === "receiving_task" || status === "reviewing";
+  const briefing = status === "receiving_task" || status === "reviewing" || !!forceTalk;
   const active = status === "working" || status === "thinking" || status === "receiving_task" || status === "reviewing";
   const eyeColor = error ? "#ff6b81" : color;
   const dotColor = dotColorFor(status, color);
@@ -74,7 +79,7 @@ export function AgentRobot({ agentId, name, color, status, target, lookTarget, o
     const dist = posRef.current.distanceTo(targetVec);
     const isWalking = dist > 0.04;
 
-    const SPEED = 1.7; // units/sec
+    const SPEED = WALK_SPEED; // units/sec
     if (isWalking) {
       const step = Math.min(dist, SPEED * delta);
       const dir = targetVec.clone().sub(posRef.current).normalize();
