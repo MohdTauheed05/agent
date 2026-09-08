@@ -1,0 +1,2 @@
+Demo Mode placeholder — this stands in for generated audio.
+Connect a real audio provider in lib/ai/provider.ts to produce an actual file here.

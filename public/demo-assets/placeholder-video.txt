@@ -1,0 +1,2 @@
+Demo Mode placeholder — this stands in for a generated video clip.
+Connect a real video provider in lib/ai/provider.ts to produce an actual file here.
