@@ -7,6 +7,7 @@ import * as THREE from "three";
 import { AgentId, AgentStatus } from "@/types";
 import { STATUS_HEX } from "@/lib/theme";
 import { WALK_SPEED } from "@/lib/office3d-layout";
+import { obstaclesFor, steerTarget } from "@/lib/office3d-pathing";
 
 // Body proportions, in world units (roughly meters). Feet at y=0.
 const SHIN_LEN = 0.22;
@@ -48,6 +49,9 @@ interface AgentRobotProps {
 export function AgentRobot({ agentId, name, color, status, target, lookTarget, onSelect, forceTalk }: AgentRobotProps) {
   const group = useRef<THREE.Group>(null!);
   const posRef = useRef(new THREE.Vector3(target[0], 0, target[1]));
+  // Static per-agent obstacle list (every other desk + the break/lunch
+  // tables) — computed once, not per frame, since desks never move.
+  const obstacles = useMemo(() => obstaclesFor(agentId), [agentId]);
 
   const bodyBob = useRef<THREE.Group>(null!);
   const lHip = useRef<THREE.Group>(null!);
@@ -81,12 +85,19 @@ export function AgentRobot({ agentId, name, color, status, target, lookTarget, o
 
     const SPEED = WALK_SPEED; // units/sec
     if (isWalking) {
+      // Aim at the real target unless a desk/table sits directly in the
+      // way, in which case aim at a detour point that skirts around it —
+      // recomputed every frame so the route curves smoothly and
+      // re-straightens the instant the path is clear.
+      const steerVec2 = steerTarget([posRef.current.x, posRef.current.z], [target[0], target[1]], obstacles);
+      const steerVec = new THREE.Vector3(steerVec2[0], 0, steerVec2[1]);
       const step = Math.min(dist, SPEED * delta);
-      const dir = targetVec.clone().sub(posRef.current).normalize();
+      const dir = steerVec.clone().sub(posRef.current);
+      if (dir.lengthSq() > 1e-8) dir.normalize();
       posRef.current.addScaledVector(dir, step);
       g.position.x = posRef.current.x;
       g.position.z = posRef.current.z;
-      g.lookAt(targetVec.x, g.position.y, targetVec.z);
+      g.lookAt(steerVec.x, g.position.y, steerVec.z);
     } else {
       g.lookAt(lookTarget[0], g.position.y, lookTarget[1]);
     }
