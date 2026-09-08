@@ -9,6 +9,7 @@ import { AgentStatus } from "@/types";
 import { AgentRobot } from "./office3d/AgentRobot";
 import { DeskModel } from "./office3d/DeskModel";
 import { OfficeEnvironment } from "./office3d/OfficeEnvironment";
+import { useAmbientOffice } from "./office3d/useAmbientOffice";
 import {
   DESK_LAYOUT,
   SPECIALIST_IDS,
@@ -23,6 +24,10 @@ function isBriefing(status: AgentStatus) {
   return status === "receiving_task" || status === "reviewing";
 }
 
+function isFreeToWander(status: AgentStatus) {
+  return status === "idle" || status === "completed";
+}
+
 function isActive(status: AgentStatus) {
   return status === "thinking" || status === "working" || status === "receiving_task" || status === "reviewing";
 }
@@ -30,6 +35,7 @@ function isActive(status: AgentStatus) {
 export function Office3D() {
   const agentRuntime = useOfficeStore((s) => s.agentRuntime);
   const selectAgent = useOfficeStore((s) => s.selectAgent);
+  const ambient = useAmbientOffice(agentRuntime);
 
   return (
     <div
@@ -61,11 +67,19 @@ export function Office3D() {
               if (runtime.status === "reviewing") lookTarget = ORION_REVIEW_LOOK_TARGET;
             } else {
               const i = SPECIALIST_IDS.indexOf(agent.id);
+              const ambientEntry = ambient[agent.id];
               if (isBriefing(runtime.status)) {
+                // A real briefing always wins, even if the agent was mid-break.
                 target = meetingSpot(i);
                 lookTarget = MEETING_LOOK_TARGET;
+              } else if (isFreeToWander(runtime.status) && ambientEntry && ambientEntry.activity !== "none") {
+                target = ambientEntry.target;
+                lookTarget = ambientEntry.lookTarget;
               }
             }
+
+            const forceTalk =
+              agent.id !== "orion" && isFreeToWander(runtime.status) && ambient[agent.id]?.talking;
 
             return (
               <group key={agent.id}>
@@ -78,6 +92,7 @@ export function Office3D() {
                   target={target}
                   lookTarget={lookTarget}
                   onSelect={() => selectAgent(agent.id)}
+                  forceTalk={forceTalk}
                 />
               </group>
             );
