@@ -35,6 +35,7 @@ function isActive(status: AgentStatus) {
 export function Office3D() {
   const agentRuntime = useOfficeStore((s) => s.agentRuntime);
   const selectAgent = useOfficeStore((s) => s.selectAgent);
+  const chatBusy = useOfficeStore((s) => s.chatBusy);
   const ambient = useAmbientOffice(agentRuntime);
 
   return (
@@ -78,8 +79,20 @@ export function Office3D() {
               }
             }
 
+            // Live chat with the user always wins over an ambient
+            // coffee/lunch/hallway break, but never interrupts a real
+            // task — same "a real task wins" rule useAmbientOffice
+            // already applies. Stay put and turn toward the camera/user
+            // rather than walking off, so it reads as "looked up from
+            // the desk to answer", not an errand.
+            const isChatting = !!chatBusy[agent.id];
+            if (isChatting && isFreeToWander(runtime.status)) {
+              lookTarget = [target[0], target[1] + 6];
+            }
+
             const forceTalk =
-              agent.id !== "orion" && isFreeToWander(runtime.status) && ambient[agent.id]?.talking;
+              (agent.id !== "orion" && isFreeToWander(runtime.status) && ambient[agent.id]?.talking) ||
+              (isChatting && isFreeToWander(runtime.status));
 
             return (
               <group key={agent.id}>
