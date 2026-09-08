@@ -108,6 +108,13 @@ export interface Project {
   outputs: AgentOutput[];
 }
 
+export interface ChatMessage {
+  id: string;
+  role: "user" | "agent";
+  text: string;
+  timestamp: number;
+}
+
 export interface AgentRuntimeState {
   id: AgentId;
   status: AgentStatus;
