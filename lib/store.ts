@@ -6,6 +6,7 @@ import {
   AgentRuntimeState,
   AgentStatus,
   ActivityLogEntry,
+  ChatMessage,
   Priority,
   Project,
   SubTask,
@@ -20,6 +21,12 @@ interface OfficeState {
   activityLog: ActivityLogEntry[];
   selectedAgentId: AgentId | null;
   demoMode: boolean;
+  // Direct chat with a single agent (separate from the task pipeline
+  // above) — one thread per agent, plus whether that agent is currently
+  // "on the phone" (typing/replying), which Office3D uses to give the
+  // robot a talking gesture while it's chatting with the user.
+  chatMessages: Record<AgentId, ChatMessage[]>;
+  chatBusy: Record<AgentId, boolean>;
 
   setDemoMode: (on: boolean) => void;
   createProject: (brief: string, priority: Priority, agentMode: "automatic" | "manual", selectedAgents?: AgentId[]) => string;
@@ -29,6 +36,9 @@ interface OfficeState {
   setAgentStatus: (id: AgentId, status: AgentStatus, subtaskId?: string | null) => void;
   log: (agentId: AgentId | "system" | "user", message: string, level: ActivityLogEntry["level"]) => void;
   selectAgent: (id: AgentId | null) => void;
+  addChatMessage: (agentId: AgentId, message: ChatMessage) => void;
+  setChatBusy: (agentId: AgentId, busy: boolean) => void;
+  clearChat: (agentId: AgentId) => void;
   // One-time merge of projects fetched from Firestore on load. Only applies
   // if the local store is still empty, so it never clobbers a project
   // that's already running in this tab (see lib/firebase/sync.ts).
@@ -43,6 +53,12 @@ const initialAgentRuntime = (): Record<AgentId, AgentRuntimeState> =>
     ])
   ) as unknown as Record<AgentId, AgentRuntimeState>;
 
+const initialChatMessages = (): Record<AgentId, ChatMessage[]> =>
+  Object.fromEntries(AGENT_ROSTER.map((a) => [a.id, []])) as unknown as Record<AgentId, ChatMessage[]>;
+
+const initialChatBusy = (): Record<AgentId, boolean> =>
+  Object.fromEntries(AGENT_ROSTER.map((a) => [a.id, false])) as unknown as Record<AgentId, boolean>;
+
 export const useOfficeStore = create<OfficeState>((set, get) => ({
   projects: [],
   activeProjectId: null,
@@ -50,6 +66,8 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   activityLog: [],
   selectedAgentId: null,
   demoMode: true,
+  chatMessages: initialChatMessages(),
+  chatBusy: initialChatBusy(),
 
   setDemoMode: (on) => set({ demoMode: on }),
 
@@ -141,6 +159,20 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
     })),
 
   selectAgent: (id) => set({ selectedAgentId: id }),
+
+  addChatMessage: (agentId, message) =>
+    set((state) => ({
+      chatMessages: {
+        ...state.chatMessages,
+        [agentId]: [...(state.chatMessages[agentId] ?? []), message].slice(-100),
+      },
+    })),
+
+  setChatBusy: (agentId, busy) =>
+    set((state) => ({ chatBusy: { ...state.chatBusy, [agentId]: busy } })),
+
+  clearChat: (agentId) =>
+    set((state) => ({ chatMessages: { ...state.chatMessages, [agentId]: [] } })),
 
   hydrateProjects: (projects) =>
     set((state) =>
