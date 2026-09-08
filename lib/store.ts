@@ -20,6 +20,8 @@ interface OfficeState {
   agentRuntime: Record<AgentId, AgentRuntimeState>;
   activityLog: ActivityLogEntry[];
   selectedAgentId: AgentId | null;
+  demoMode: boolean;
+  setDemoMode: (on: boolean) => void;
   chatMessages: Record<AgentId, ChatMessage[]>;
   chatBusy: Record<AgentId, boolean>;
 
@@ -56,6 +58,10 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   agentRuntime: initialAgentRuntime(),
   activityLog: [],
   selectedAgentId: null,
+  // Demo mode is intentionally disabled. Keep the legacy field temporarily so
+  // older UI components remain type-safe, but it can no longer be enabled.
+  demoMode: false,
+  setDemoMode: () => set({ demoMode: false }),
   chatMessages: initialChatMessages(),
   chatBusy: initialChatBusy(),
 
