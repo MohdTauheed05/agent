@@ -65,7 +65,13 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   agentRuntime: initialAgentRuntime(),
   activityLog: [],
   selectedAgentId: null,
-  demoMode: true,
+  // Starts real/demo based on your env var so a fresh deploy actually
+  // respects NEXT_PUBLIC_DEMO_MODE instead of always booting into demo
+  // until someone manually flips the TopNav toggle. Mirrors
+  // resolveProvider()'s own rule exactly: only the literal string
+  // "false" turns demo mode off; unset (or anything else) defaults to
+  // demo, same as the rest of the app.
+  demoMode: process.env.NEXT_PUBLIC_DEMO_MODE !== "false",
   chatMessages: initialChatMessages(),
   chatBusy: initialChatBusy(),
 
