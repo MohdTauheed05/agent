@@ -1,6 +1,23 @@
 "use client";
 
-import { ROOM, MEETING_BASE } from "@/lib/office3d-layout";
+import {
+  ROOM,
+  MEETING_BASE,
+  BREAK_TABLE,
+  BREAK_STAND_SPOTS,
+  LUNCH_TABLE,
+  LUNCH_STAND_SPOTS,
+} from "@/lib/office3d-layout";
+
+// Simple stool, reused at both the coffee corner and the lunch table.
+function Stool({ x, z }: { x: number; z: number }) {
+  return (
+    <mesh position={[x, 0.24, z]} castShadow>
+      <cylinderGeometry args={[0.14, 0.16, 0.42, 12]} />
+      <meshStandardMaterial color="#aeb9cc" roughness={0.5} metalness={0.2} />
+    </mesh>
+  );
+}
 
 // Blocky background buildings behind the window wall, purely for depth —
 // z is staggered slightly per building (not literal distance) so they don't
@@ -91,6 +108,57 @@ export function OfficeEnvironment() {
         <cylinderGeometry args={[0.12, 0.16, 0.4, 16]} />
         <meshStandardMaterial color="#20242c" roughness={0.5} metalness={0.3} />
       </mesh>
+
+      {/* coffee corner — idle specialists wander here for a quick break */}
+      <group position={[BREAK_TABLE[0], 0, BREAK_TABLE[1]]}>
+        <mesh position={[0, 0.55, 0]} castShadow receiveShadow>
+          <cylinderGeometry args={[0.55, 0.55, 0.05, 24]} />
+          <meshStandardMaterial color="#e7ebf1" roughness={0.4} metalness={0.1} />
+        </mesh>
+        <mesh position={[0, 0.28, 0]}>
+          <cylinderGeometry args={[0.06, 0.08, 0.55, 12]} />
+          <meshStandardMaterial color="#20242c" roughness={0.5} metalness={0.3} />
+        </mesh>
+        {/* coffee machine on a small side counter */}
+        <mesh position={[0.95, 0.4, -0.85]} castShadow>
+          <boxGeometry args={[0.4, 0.8, 0.32]} />
+          <meshStandardMaterial color="#3a3f47" roughness={0.5} metalness={0.2} />
+        </mesh>
+        <mesh position={[0.95, 0.85, -0.85]} castShadow>
+          <boxGeometry args={[0.36, 0.4, 0.3]} />
+          <meshStandardMaterial color="#20242c" roughness={0.4} metalness={0.5} />
+        </mesh>
+        <mesh position={[0.95, 0.9, -0.68]}>
+          <sphereGeometry args={[0.025, 8, 8]} />
+          <meshStandardMaterial color="#ff8a5c" emissive="#ff8a5c" emissiveIntensity={0.9} toneMapped={false} />
+        </mesh>
+        {BREAK_STAND_SPOTS.map(([x, z], i) => (
+          <Stool key={i} x={x - BREAK_TABLE[0]} z={z - BREAK_TABLE[1]} />
+        ))}
+      </group>
+
+      {/* lunch table — where the office ends up when several agents are
+          free to break at once */}
+      <group position={[LUNCH_TABLE[0], 0, LUNCH_TABLE[1]]}>
+        <mesh position={[0, 0.5, 0]} castShadow receiveShadow>
+          <boxGeometry args={[2.3, 0.06, 1.1]} />
+          <meshStandardMaterial color="#d8ccb8" roughness={0.5} metalness={0.05} />
+        </mesh>
+        {[
+          [-0.95, -0.42],
+          [0.95, -0.42],
+          [-0.95, 0.42],
+          [0.95, 0.42],
+        ].map(([lx, lz], i) => (
+          <mesh key={i} position={[lx, 0.25, lz]}>
+            <cylinderGeometry args={[0.04, 0.04, 0.5, 8]} />
+            <meshStandardMaterial color="#20242c" roughness={0.5} metalness={0.3} />
+          </mesh>
+        ))}
+        {LUNCH_STAND_SPOTS.map(([x, z], i) => (
+          <Stool key={i} x={x - LUNCH_TABLE[0]} z={z - LUNCH_TABLE[1]} />
+        ))}
+      </group>
 
       {/* pendant lights hanging from the (unseen/open) ceiling */}
       {PENDANT_LIGHTS.map(([x, z], i) => (
