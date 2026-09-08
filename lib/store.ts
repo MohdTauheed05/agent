@@ -20,15 +20,9 @@ interface OfficeState {
   agentRuntime: Record<AgentId, AgentRuntimeState>;
   activityLog: ActivityLogEntry[];
   selectedAgentId: AgentId | null;
-  demoMode: boolean;
-  // Direct chat with a single agent (separate from the task pipeline
-  // above) — one thread per agent, plus whether that agent is currently
-  // "on the phone" (typing/replying), which Office3D uses to give the
-  // robot a talking gesture while it's chatting with the user.
   chatMessages: Record<AgentId, ChatMessage[]>;
   chatBusy: Record<AgentId, boolean>;
 
-  setDemoMode: (on: boolean) => void;
   createProject: (brief: string, priority: Priority, agentMode: "automatic" | "manual", selectedAgents?: AgentId[]) => string;
   updateProject: (id: string, patch: Partial<Project>) => void;
   patchSubtask: (projectId: string, subtaskId: string, patch: Partial<SubTask>) => void;
@@ -39,9 +33,6 @@ interface OfficeState {
   addChatMessage: (agentId: AgentId, message: ChatMessage) => void;
   setChatBusy: (agentId: AgentId, busy: boolean) => void;
   clearChat: (agentId: AgentId) => void;
-  // One-time merge of projects fetched from Firestore on load. Only applies
-  // if the local store is still empty, so it never clobbers a project
-  // that's already running in this tab (see lib/firebase/sync.ts).
   hydrateProjects: (projects: Project[]) => void;
 }
 
@@ -65,17 +56,8 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   agentRuntime: initialAgentRuntime(),
   activityLog: [],
   selectedAgentId: null,
-  // Starts real/demo based on your env var so a fresh deploy actually
-  // respects NEXT_PUBLIC_DEMO_MODE instead of always booting into demo
-  // until someone manually flips the TopNav toggle. Mirrors
-  // resolveProvider()'s own rule exactly: only the literal string
-  // "false" turns demo mode off; unset (or anything else) defaults to
-  // demo, same as the rest of the app.
-  demoMode: process.env.NEXT_PUBLIC_DEMO_MODE !== "false",
   chatMessages: initialChatMessages(),
   chatBusy: initialChatBusy(),
-
-  setDemoMode: (on) => set({ demoMode: on }),
 
   createProject: (brief, priority, agentMode, selectedAgents) => {
     const id = uuid();
