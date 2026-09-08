@@ -64,3 +64,47 @@ export const ROOM = {
   centerZ: -1.5,
   backWallZ: -8.6,
 };
+
+// Single source of truth for how fast a robot walks (units/sec). AgentRobot
+// animates at this speed, and the orchestrator uses it to size how long an
+// agent should actually be given to walk somewhere before the task pipeline
+// moves on — without this, a status change can fire before the walk
+// animation finishes, which looks like the agent turning back partway.
+export const WALK_SPEED = 1.7;
+
+// --- Break areas -----------------------------------------------------------
+// Open floor space toward the front of the room (+Z), clear of every desk
+// and the meeting table, where idle specialists go to hang out when there's
+// no task keeping them at their desk.
+
+export const BREAK_TABLE: [number, number] = [9.6, 5.4];
+export const BREAK_STAND_SPOTS: [number, number][] = [
+  [BREAK_TABLE[0] - 0.85, BREAK_TABLE[1] - 0.5],
+  [BREAK_TABLE[0] + 0.85, BREAK_TABLE[1] - 0.4],
+  [BREAK_TABLE[0] - 0.1, BREAK_TABLE[1] + 0.9],
+];
+
+export const LUNCH_TABLE: [number, number] = [-9.6, 5.4];
+export const LUNCH_STAND_SPOTS: [number, number][] = [
+  [LUNCH_TABLE[0] - 1.0, LUNCH_TABLE[1] - 0.55],
+  [LUNCH_TABLE[0] + 1.0, LUNCH_TABLE[1] - 0.55],
+  [LUNCH_TABLE[0] - 0.75, LUNCH_TABLE[1] + 0.85],
+  [LUNCH_TABLE[0] + 0.75, LUNCH_TABLE[1] + 0.85],
+];
+
+// Casual two-person chat spots, scattered across the open floor between the
+// break table and the lunch table. Each anchor expands to two face-to-face
+// standing points.
+const CHAT_ANCHORS: [number, number][] = [
+  [-3.6, 5.6],
+  [3.6, 5.6],
+  [0, 6.6],
+];
+export const CHAT_ANCHOR_COUNT = CHAT_ANCHORS.length;
+export function chatPair(anchorIndex: number): [[number, number], [number, number]] {
+  const [ax, az] = CHAT_ANCHORS[anchorIndex % CHAT_ANCHORS.length];
+  return [
+    [ax - 0.45, az],
+    [ax + 0.45, az],
+  ];
+}
