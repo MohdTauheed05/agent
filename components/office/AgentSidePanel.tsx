@@ -6,6 +6,7 @@ import { useOfficeStore, selectActiveProject } from "@/lib/store";
 import { getAgent } from "@/lib/agents/roster";
 import { AgentAvatar } from "./AgentAvatar";
 import { StatusPill } from "./StatusPill";
+import { AgentChatPanel } from "./AgentChatPanel";
 
 const OUTPUT_ICON: Record<string, typeof FileText> = {
   document: FileText,
@@ -80,6 +81,10 @@ export function AgentSidePanel() {
                 </span>
               ))}
             </div>
+
+            <Section title="Chat">
+              <AgentChatPanel agent={agent} />
+            </Section>
 
             <Section title="Current task">
               {currentTask ? (
