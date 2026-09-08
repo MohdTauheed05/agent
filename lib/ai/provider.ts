@@ -56,8 +56,13 @@ class OpenAIProvider implements AIProvider {
   async generateAudio({ text, voice }: AudioGenParams): Promise<{ url: string }> {
     return postJSON<{ url: string }>("/api/ai/audio", { provider: "openai", text, voice });
   }
-  async generateVideo(): Promise<{ url: string }> {
-    throw new Error("Video generation is not configured yet. Add a video provider behind /api/ai/video.");
+  async generateVideo({ prompt, referenceImageUrl, durationSeconds }: VideoGenParams): Promise<{ url: string }> {
+    return postJSON<{ url: string }>("/api/ai/video", {
+      provider: "runway",
+      prompt,
+      referenceImageUrl,
+      durationSeconds,
+    });
   }
 }
 
@@ -101,9 +106,11 @@ const providers: Record<string, AIProvider> = {
   gemini: new GeminiProvider(),
 };
 
-// Demo mode has been removed. A real provider is always used.
+// Demo mode has been removed. Treat accidental boolean-style values such as
+// "false" as an unset provider and use the real OpenAI provider by default.
 export function resolveProvider(): AIProvider {
-  const providerName = process.env.NEXT_PUBLIC_AI_PROVIDER || "openai";
+  const raw = process.env.NEXT_PUBLIC_AI_PROVIDER?.trim().toLowerCase();
+  const providerName = raw && raw !== "false" ? raw : "openai";
   const provider = providers[providerName];
   if (!provider) {
     throw new Error(`Unsupported AI provider "${providerName}". Set NEXT_PUBLIC_AI_PROVIDER to openai, anthropic, or gemini.`);
